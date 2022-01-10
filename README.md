@@ -15,7 +15,7 @@ The used protocol for communicating with the display is SPI
 	GND  -->  GND<br>
 	VDD  -->  3v3<br>
 	SCK  -->  SCK (D13)<br>
-	SDA  -->  MOSI (D12)<br>
+	SDA  -->  MOSI (D11)<br>
 	RES  -->  SS (D10)<br>
 	DC   -->  D9<br>
 	CS   -->  D8<br>
