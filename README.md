@@ -9,7 +9,7 @@ Hardware used:
 - SSD1306 (182x64) Display
 
 
-	Display		Arduino
+	Display - Arduino
 
 	GND  -->  GND<br>
 	VDD  -->  3v3<br>
@@ -18,3 +18,10 @@ Hardware used:
 	RES  -->  SS (D10)<br>
 	DC   -->  D9<br>
 	CS   -->  D8<br>
+
+	Vesc - Arduino
+
+	5v   -->  5v<br>
+	GND  -->  GND<br>
+	TX   -->  RX (D1)<br>
+	RX   -->  TX (D0)<br>
