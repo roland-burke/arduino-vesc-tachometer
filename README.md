@@ -2,12 +2,13 @@
 
 Basic overview of the tachometer controlled by arduino nano.
 
-## Connections
-
-Hardware used:
+## Hardware used
 - Arduino Nano (Atmega328p)
 - SSD1306 (182x64) Display
 
+## Connections
+
+The used protocol for communicating with the display is SPI
 
 	Display - Arduino
 
