@@ -24,14 +24,14 @@ const char* const PROGMEM batteryFormat = "%.1f%%";
 const char* const PROGMEM notAvailable = "n.A.";
 const char* const PROGMEM speedTitle = "SPEED";
 const char* const PROGMEM tempTitle = "TEMP";
-const char* const PROGMEM statusTitle = "STATUS";
+const char* const PROGMEM infoTitle = "INFO";
 const char* const PROGMEM timeTitle = "TIME";
 const char* const PROGMEM tripTitle = "TRIP";
 const char* const PROGMEM errorStr = "Error";
 const char* const PROGMEM kmhString = "KMH";
 const char* const PROGMEM gradString = "GRAD C";
 const char* const PROGMEM kmString = "KM";
-const char* const PROGMEM speedFormat = "%.1f%%";
+const char* const PROGMEM speedFormat = "%.1f";
 const char* const PROGMEM rpmString = "RPM: ";
 
 
@@ -64,7 +64,7 @@ void setup()
 
     ssd1306_clearScreen();
 
-    Serial.begin(11520);
+    Serial.begin(115200);
     UART.setSerialPort(&Serial);
 
     // setup button
@@ -177,7 +177,8 @@ void loop()
     showTitle(tripTitle);
     showTrip();
   } else {
-    showTitle(statusTitle);
+    showTitle(infoTitle);
+    ssd1306_setFixedFont(ssd1306xled_font6x8);
     if ( UART.getVescValues() ) {
         char PROGMEM inpVoltage[6];
         char PROGMEM rpm[6];
