@@ -4,25 +4,31 @@ Basic overview of the tachometer controlled by arduino nano.
 
 ## Hardware used
 - Arduino Nano (Atmega328p)
-- SSD1306 (182x64) Display
+- SSD1306 (128x64) Display
 
 ## Connections
 
-The used protocol for communicating with the display is SPI
+The used protocol for communicating with the display is SPI. A and B are the opposite connctions on the button.
 
 	Display - Arduino
 
-	GND  -->  GND<br>
-	VDD  -->  3v3<br>
-	SCK  -->  SCK (D13)<br>
-	SDA  -->  MOSI (D11)<br>
-	RES  -->  SS (D10)<br>
-	DC   -->  D9<br>
-	CS   -->  D8<br>
+	GND  -->  GND
+	VDD  -->  3v3
+	SCK  -->  SCK (D13)
+	SDA  -->  MOSI (D11)
+	RES  -->  SS (D10)
+	DC   -->  D9
+	CS   -->  D8
 
 	Vesc - Arduino
 
-	5v   -->  5v<br>
-	GND  -->  GND<br>
-	TX   -->  RX (D1)<br>
-	RX   -->  TX (D0)<br>
+	5v   -->  5v
+	GND  -->  GND
+	TX   -->  RX (D1)
+	RX   -->  TX (D0)
+
+	Button - Arduino
+
+	A1   -->  GND (with 10k resistance)
+	A2   -->  D4
+	B1   -->  5v5
