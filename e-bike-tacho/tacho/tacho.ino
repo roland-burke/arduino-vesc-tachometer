@@ -42,19 +42,11 @@ const char* const PROGMEM rpmString = "RPM: ";
 
 
 // Menu State Management
-int controlState = 0;
-int nStates = 5;
+const int PROGMEM nStates = 5;
 
+int controlState = 0;
 int buttonState = 0;
 int lastButtonState = 0;
-
-void changeState() {
-  if(controlState == nStates - 1) {
-    controlState = 0;
-  } else {
-    controlState++;
-  }
-}
 
 void setup()
 {
@@ -67,6 +59,14 @@ void setup()
 
     // setup button
     pinMode(BUTTON_PIN, INPUT);
+}
+
+void changeState() {
+  if(controlState == nStates - 1) {
+    controlState = 0;
+  } else {
+    controlState++;
+  }
 }
 
 char* getTime(char* timeString) {
@@ -86,13 +86,9 @@ void showTitle(const char* text) {
 }
 
 void showBattery() {
-
-  ssd1306_setFixedFont(ssd1306xled_font8x16 );
+  ssd1306_setFixedFont(ssd1306xled_font8x16);
   if ( UART.getVescValues() ) {
-        
         float voltage = (UART.data.inpVoltage);
-
-        Serial.println("Voltage: " + String(voltage));
 
         float batteryPercent = ((voltage - BAT_MIN_VOLTAGE) / (BAT_MAX_VOLTAGE - BAT_MIN_VOLTAGE)) * 100;
 
@@ -146,7 +142,6 @@ void showTemperature() {
 }
 
 void showTrip() {
-
   if ( UART.getVescValues() ) {
         float tach = (UART.data.tachometerAbs) / POLES * 3;
         
@@ -180,7 +175,8 @@ void showTime() {
 void loop()
 {
   int buttonState = digitalRead(BUTTON_PIN);
-
+  
+  // Control the button press, so that it doesn't keep switching if you keep the button pressed
   if (lastButtonState != buttonState) {
     if (lastButtonState == 0 && buttonState == 1) {
       changeState();
