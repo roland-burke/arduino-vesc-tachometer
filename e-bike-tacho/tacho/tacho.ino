@@ -3,35 +3,38 @@
 #include <SPI.h>
 #include <VescUart.h>
 
-// button
+// Button
 #define BUTTON_PIN 4
 
-// ui
+// Ui
 #define MAIN_Y_POS 22
 
-// calculations
-#define POLE_PAIRS 21
+// Calculations
+#define POLES 46
 #define WHEEL_DIAMETER 0.72 // in meter
-#define MOTOR_PULLEY 16.0
-#define WHEEL_PULLEY 185.0
-#define MIN_VOLTAGE 36
-#define NUM_OF_CELLS 12
+#define BAT_MIN_VOLTAGE 48.0 // Empty
+#define BAT_MAX_VOLTAGE 67.2 // Full
 
 VescUart UART;
 
+// String formats
 const char* const PROGMEM timeFormat = "%.2d:%.2ld";
-const char* const PROGMEM batteryFormat = "%.1f%%";
-const char* const PROGMEM notAvailable = "n.A.";
+
+//Titles
 const char* const PROGMEM speedTitle = "SPEED";
 const char* const PROGMEM tempTitle = "TEMP";
 const char* const PROGMEM infoTitle = "INFO";
 const char* const PROGMEM timeTitle = "TIME";
 const char* const PROGMEM tripTitle = "TRIP";
+
+// Messages
+const char* const PROGMEM notAvailable = "n.A.";
 const char* const PROGMEM errorStr = "Error";
+
+// Units
 const char* const PROGMEM kmhString = "KMH";
 const char* const PROGMEM gradString = "GRAD C";
 const char* const PROGMEM kmString = "KM";
-const char* const PROGMEM speedFormat = "%.1f";
 const char* const PROGMEM rpmString = "RPM: ";
 
 
@@ -97,12 +100,12 @@ void showBattery() {
 
         Serial.println("Voltage: " + String(voltage));
 
-        float battery = ((voltage - 38.4) / 12) * 100;
+        float batteryPercent = ((voltage - BAT_MIN_VOLTAGE) / (BAT_MAX_VOLTAGE - BAT_MIN_VOLTAGE)) * 100;
 
-        char PROGMEM batteryString[10];
-        sprintf(batteryString, batteryFormat, battery);
-
-        ssd1306_printFixed(95, 2, batteryString, STYLE_NORMAL);
+        char PROGMEM batteryString[5];
+        dtostrf(batteryPercent, 3, 0, batteryString);
+        strcat(batteryString, "%");        
+        ssd1306_printFixed(88, 2, batteryString, STYLE_NORMAL);
       } else {
         //Serial.println("Failed to get data");
         ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
@@ -112,14 +115,19 @@ void showBattery() {
 void showSpeed() {
   if ( UART.getVescValues() ) {
         
-        int rpm = (UART.data.rpm) / POLE_PAIRS;
+        int rpm = (UART.data.rpm) / (POLES / 2);
 
         Serial.println(rpmString + String(UART.data.rpm));
+        
+        // We do not need to pay attention to the translation because it is 1 to 1.
+        float velocity = abs(rpm) * PI * (60.0 / 1000.0) * WHEEL_DIAMETER;
 
-        float velocity = rpm * PI * (60.0 / 1000.0) * WHEEL_DIAMETER * (MOTOR_PULLEY / WHEEL_PULLEY);
+        if (velocity > 999) {
+          velocity = 999;
+        } 
 
-        char PROGMEM speedString[10];
-        sprintf(speedString, speedFormat, velocity);
+        char PROGMEM speedString[4];
+        dtostrf(velocity, 3, 0, speedString);
 
         ssd1306_setFixedFont(comic_sans_font24x32_123);
         ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
@@ -133,15 +141,47 @@ void showSpeed() {
 }
 
 void showTemperature() {
-  ssd1306_setFixedFont(comic_sans_font24x32_123);
-  ssd1306_printFixed(0, MAIN_Y_POS, "56", STYLE_BOLD);
+  if ( UART.getVescValues() ) {
+        float tempMotor = UART.data.tempMotor;
+
+        char PROGMEM tempMotorString[4];
+        dtostrf(tempMotor, 3, 0, tempMotorString);
+
+        ssd1306_setFixedFont(comic_sans_font24x32_123);
+        ssd1306_printFixed(0, MAIN_Y_POS, tempMotorString, STYLE_BOLD);
+      } else {
+          //Serial.println("Failed to get data");
+          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+      }
   ssd1306_setFixedFont(ssd1306xled_font8x16);
   ssd1306_printFixed(80, 53, gradString, STYLE_BOLD);
 }
 
 void showTrip() {
-  ssd1306_setFixedFont(comic_sans_font24x32_123);
-  ssd1306_printFixed(0, MAIN_Y_POS, "23.4", STYLE_BOLD);
+
+  if ( UART.getVescValues() ) {
+        
+        float tach = (UART.data.tachometerAbs) / POLES * 3;
+
+        Serial.println(rpmString + String(UART.data.rpm));
+        
+        // We do not need to pay attention to the translation because it is 1 to 1.
+        float distance = tach * PI * (1.0/1000.0) * WHEEL_DIAMETER;
+
+        if (distance > 99) {
+          distance = 99;
+        } 
+
+        char PROGMEM distanceString[5];
+        dtostrf(distance, 2, 1, distanceString);
+
+        ssd1306_setFixedFont(comic_sans_font24x32_123);
+        ssd1306_printFixed(0, MAIN_Y_POS, distanceString, STYLE_BOLD);
+      } else {
+          //Serial.println("Failed to get data");
+          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+      }
+
   ssd1306_setFixedFont(ssd1306xled_font8x16 );
   ssd1306_printFixed(108, 53, kmString, STYLE_NORMAL);
 }
@@ -157,9 +197,12 @@ void loop()
 {
   int buttonState = digitalRead(BUTTON_PIN);
 
-  if (lastButtonState == 0 && buttonState == 1) {
-    changeState();
-    ssd1306_clearScreen();
+  if (lastButtonState != buttonState) {
+    if (lastButtonState == 0 && buttonState == 1) {
+      changeState();
+      ssd1306_clearScreen();
+    }
+    lastButtonState = buttonState;
   }
 
   showBattery();
@@ -182,28 +225,32 @@ void loop()
     if ( UART.getVescValues() ) {
         char PROGMEM inpVoltage[6];
         char PROGMEM rpm[6];
-        char PROGMEM ampHours[6];
+        char PROGMEM avgInpCurrent[6];
         char PROGMEM tachometerAbs[6];
+        char PROGMEM ampHours[6];
         itoa(UART.data.inpVoltage, inpVoltage, 10);
         itoa(UART.data.rpm, rpm, 10);
-        itoa(UART.data.ampHours, ampHours, 10);
+        itoa(UART.data.avgInputCurrent, avgInpCurrent, 10);
         itoa(UART.data.tachometerAbs, tachometerAbs, 10);
+        itoa(UART.data.ampHours, ampHours, 10);
         
         ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
         ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  32, "ampHours:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  32, "avgInpCurr:", STYLE_NORMAL);
         ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
-        ssd1306_printFixed(90,  16, inpVoltage, STYLE_NORMAL);
-        ssd1306_printFixed(90,  24, rpm, STYLE_NORMAL);
-        ssd1306_printFixed(90,  32, ampHours, STYLE_NORMAL);
-        ssd1306_printFixed(90,  40, tachometerAbs, STYLE_NORMAL);
+        ssd1306_printFixed(0,  48, "ampHours:", STYLE_NORMAL);
+        ssd1306_printFixed(88,  16, inpVoltage, STYLE_NORMAL);
+        ssd1306_printFixed(88,  24, rpm, STYLE_NORMAL);
+        ssd1306_printFixed(88,  32, avgInpCurrent, STYLE_NORMAL);
+        ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
+        ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
       } else {
           //Serial.println("Failed to get data");
           ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
       } 
   }
 
-  delay(100);
+  delay(10);
     
 }
 
