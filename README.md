@@ -5,6 +5,7 @@ Basic overview of the tachometer controlled by arduino nano.
 ## Hardware used
 - Arduino Nano (Atmega328p)
 - SSD1306 (128x64) Display
+- Button
 
 ## Connections
 
