@@ -3,8 +3,11 @@
 #include <SPI.h>
 #include <VescUart.h>
 
-// Button
+// Pins
 #define BUTTON_PIN 4
+#define RESET_PIN 10
+#define CES_PIN 8
+#define DC_PIN 9
 
 // Ui
 #define MAIN_Y_POS 22
@@ -55,15 +58,7 @@ void changeState() {
 
 void setup()
 {
-    // Select the font to use with menu and all font functions
-    ssd1306_setFixedFont(ssd1306xled_font6x8);
-
-    //ssd1306_128x64_i2c_init();
-//    ssd1306_128x64_spi_init(-1, 0, 1);  // Use this line for nano pi (RST not used, 0=CE, gpio1=D/C)
-    ssd1306_128x64_spi_init(10,8,9);     // Use this line for Atmega328p (3=RST, 4=CE, 5=D/C)
-//    ssd1306_128x64_spi_init(24, 0, 23); // Use this line for Raspberry  (gpio24=RST, 0=CE, gpio23=D/C)
-//    ssd1306_128x64_spi_init(22, 5, 21); // Use this line for ESP32 (VSPI)  (gpio22=RST, gpio5=CE for VSPI, gpio21=D/C)
-//    composite_video_128x64_mono_init(); // Use this line for ESP32 with Composite video support
+    ssd1306_128x64_spi_init(RESET_PIN, CES_PIN, DC_PIN);
 
     ssd1306_clearScreen();
 
@@ -72,7 +67,6 @@ void setup()
 
     // setup button
     pinMode(BUTTON_PIN, INPUT);
-    
 }
 
 char* getTime(char* timeString) {
@@ -107,17 +101,13 @@ void showBattery() {
         strcat(batteryString, "%");        
         ssd1306_printFixed(88, 2, batteryString, STYLE_NORMAL);
       } else {
-        //Serial.println("Failed to get data");
         ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
       }
 }
 
 void showSpeed() {
   if ( UART.getVescValues() ) {
-        
         int rpm = (UART.data.rpm) / (POLES / 2);
-
-        Serial.println(rpmString + String(UART.data.rpm));
         
         // We do not need to pay attention to the translation because it is 1 to 1.
         float velocity = abs(rpm) * PI * (60.0 / 1000.0) * WHEEL_DIAMETER;
@@ -132,7 +122,6 @@ void showSpeed() {
         ssd1306_setFixedFont(comic_sans_font24x32_123);
         ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
       } else {
-          //Serial.println("Failed to get data");
           ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
       }
   
@@ -150,7 +139,6 @@ void showTemperature() {
         ssd1306_setFixedFont(comic_sans_font24x32_123);
         ssd1306_printFixed(0, MAIN_Y_POS, tempMotorString, STYLE_BOLD);
       } else {
-          //Serial.println("Failed to get data");
           ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
       }
   ssd1306_setFixedFont(ssd1306xled_font8x16);
@@ -160,10 +148,7 @@ void showTemperature() {
 void showTrip() {
 
   if ( UART.getVescValues() ) {
-        
         float tach = (UART.data.tachometerAbs) / POLES * 3;
-
-        Serial.println(rpmString + String(UART.data.rpm));
         
         // We do not need to pay attention to the translation because it is 1 to 1.
         float distance = tach * PI * (1.0/1000.0) * WHEEL_DIAMETER;
@@ -178,7 +163,6 @@ void showTrip() {
         ssd1306_setFixedFont(comic_sans_font24x32_123);
         ssd1306_printFixed(0, MAIN_Y_POS, distanceString, STYLE_BOLD);
       } else {
-          //Serial.println("Failed to get data");
           ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
       }
 
@@ -245,7 +229,6 @@ void loop()
         ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
         ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
       } else {
-          //Serial.println("Failed to get data");
           ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
       } 
   }
@@ -253,7 +236,4 @@ void loop()
   delay(10);
     
 }
-
-
-
 
