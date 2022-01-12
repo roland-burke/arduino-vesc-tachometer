@@ -1,40 +1,54 @@
-
-#include <font6x8.h>
-#include <nano_engine.h>
-#include <nano_gfx.h>
-#include <nano_gfx_types.h>
-#include <sprite_pool.h>
 #include <ssd1306.h>
-#include <ssd1306_16bit.h>
-#include <ssd1306_1bit.h>
-#include <ssd1306_8bit.h>
-#include <ssd1306_console.h>
 #include <ssd1306_fonts.h>
-#include <ssd1306_generic.h>
-#include <ssd1306_uart.h>
 #include <SPI.h>
 #include <VescUart.h>
 
+// button
+#define BUTTON_PIN 4
+
+// ui
+#define MAIN_Y_POS 22
+
+// calculations
+#define POLE_PAIRS 21
+#define WHEEL_DIAMETER 0.72 // in meter
+#define MOTOR_PULLEY 16.0
+#define WHEEL_PULLEY 185.0
+#define MIN_VOLTAGE 36
+#define NUM_OF_CELLS 12
+
 VescUart UART;
-const int buttonPin = 4;
+
+const char* const PROGMEM timeFormat = "%.2d:%.2ld";
+const char* const PROGMEM batteryFormat = "%.1f%%";
+const char* const PROGMEM notAvailable = "n.A.";
+const char* const PROGMEM speedTitle = "SPEED";
+const char* const PROGMEM tempTitle = "TEMP";
+const char* const PROGMEM statusTitle = "STATUS";
+const char* const PROGMEM timeTitle = "TIME";
+const char* const PROGMEM tripTitle = "TRIP";
+const char* const PROGMEM errorStr = "Error";
+const char* const PROGMEM kmhString = "KMH";
+const char* const PROGMEM gradString = "GRAD C";
+const char* const PROGMEM kmString = "KM";
+const char* const PROGMEM speedFormat = "%.1f%%";
+const char* const PROGMEM rpmString = "RPM: ";
+
+
+// Menu State Management
+int controlState = 0;
+int nStates = 5;
 
 int buttonState = 0;
 int lastButtonState = 0;
-int controlState = 0;
 
-
-static void textDemo()
-{
-    ssd1306_setFixedFont(ssd1306xled_font6x8);
-    ssd1306_clearScreen();
-    ssd1306_printFixed(0,  8, "Normal text", STYLE_NORMAL);
-    ssd1306_printFixed(0, 16, "Bold text", STYLE_BOLD);
-    ssd1306_printFixed(0, 24, "Italic text", STYLE_ITALIC);
-    ssd1306_negativeMode();
-    ssd1306_printFixed(0, 32, "Inverted bold", STYLE_BOLD);
-    ssd1306_positiveMode();
+void changeState() {
+  if(controlState == nStates - 1) {
+    controlState = 0;
+  } else {
+    controlState++;
+  }
 }
-
 
 void setup()
 {
@@ -50,61 +64,145 @@ void setup()
 
     ssd1306_clearScreen();
 
-    Serial.begin(9600);
+    Serial.begin(11520);
     UART.setSerialPort(&Serial);
 
-    pinMode(buttonPin, INPUT);
+    // setup button
+    pinMode(BUTTON_PIN, INPUT);
     
+}
+
+char* getTime(char* timeString) {
+  unsigned long myTime = millis();
+  unsigned long seconds = myTime / 1000;
+  int minutes = seconds / 60;
+  //int hours = minutes / 60;
+
+  sprintf(timeString, timeFormat, minutes % 60, seconds % 60);
+
+  return timeString;
+}
+
+void showTitle(const char* text) {
+  ssd1306_setFixedFont(ssd1306xled_font8x16 );
+  ssd1306_printFixed(0, 0, text, STYLE_NORMAL);
+}
+
+void showBattery() {
+
+  ssd1306_setFixedFont(ssd1306xled_font8x16 );
+  if ( UART.getVescValues() ) {
+        
+        float voltage = (UART.data.inpVoltage);
+
+        Serial.println("Voltage: " + String(voltage));
+
+        float battery = ((voltage - 38.4) / 12) * 100;
+
+        char PROGMEM batteryString[10];
+        sprintf(batteryString, batteryFormat, battery);
+
+        ssd1306_printFixed(95, 2, batteryString, STYLE_NORMAL);
+      } else {
+        //Serial.println("Failed to get data");
+        ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
+      }
+}
+
+void showSpeed() {
+  if ( UART.getVescValues() ) {
+        
+        int rpm = (UART.data.rpm) / POLE_PAIRS;
+
+        Serial.println(rpmString + String(UART.data.rpm));
+
+        float velocity = rpm * PI * (60.0 / 1000.0) * WHEEL_DIAMETER * (MOTOR_PULLEY / WHEEL_PULLEY);
+
+        char PROGMEM speedString[10];
+        sprintf(speedString, speedFormat, velocity);
+
+        ssd1306_setFixedFont(comic_sans_font24x32_123);
+        ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
+      } else {
+          //Serial.println("Failed to get data");
+          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+      }
+  
+  ssd1306_setFixedFont(ssd1306xled_font8x16);
+  ssd1306_printFixed(104, 53, kmhString, STYLE_NORMAL);
+}
+
+void showTemperature() {
+  ssd1306_setFixedFont(comic_sans_font24x32_123);
+  ssd1306_printFixed(0, MAIN_Y_POS, "56", STYLE_BOLD);
+  ssd1306_setFixedFont(ssd1306xled_font8x16);
+  ssd1306_printFixed(80, 53, gradString, STYLE_BOLD);
+}
+
+void showTrip() {
+  ssd1306_setFixedFont(comic_sans_font24x32_123);
+  ssd1306_printFixed(0, MAIN_Y_POS, "23.4", STYLE_BOLD);
+  ssd1306_setFixedFont(ssd1306xled_font8x16 );
+  ssd1306_printFixed(108, 53, kmString, STYLE_NORMAL);
+}
+
+void showTime() {
+  char PROGMEM timeString[7] = "";
+  getTime(timeString);
+  ssd1306_setFixedFont(comic_sans_font24x32_123 );
+  ssd1306_printFixed(0, MAIN_Y_POS, timeString, STYLE_NORMAL);
 }
 
 void loop()
 {
+  int buttonState = digitalRead(BUTTON_PIN);
 
-    buttonState = digitalRead(buttonPin);
+  if (lastButtonState == 0 && buttonState == 1) {
+    changeState();
+    ssd1306_clearScreen();
+  }
 
-      ssd1306_clearScreen();
+  showBattery();
 
-      if(controlState == 0) {
+  if(controlState == 0) {
+    showTitle(speedTitle);
+    showSpeed();
+  } else if(controlState == 1) {
+    showTitle(tempTitle);
+    showTemperature();
+  } else if (controlState == 2) {
+    showTitle(timeTitle);
+    showTime();
+  } else if (controlState == 3) {
+    showTitle(tripTitle);
+    showTrip();
+  } else {
+    showTitle(statusTitle);
+    if ( UART.getVescValues() ) {
+        char PROGMEM inpVoltage[6];
+        char PROGMEM rpm[6];
+        char PROGMEM ampHours[6];
+        char PROGMEM tachometerAbs[6];
+        itoa(UART.data.inpVoltage, inpVoltage, 10);
+        itoa(UART.data.rpm, rpm, 10);
+        itoa(UART.data.ampHours, ampHours, 10);
+        itoa(UART.data.tachometerAbs, tachometerAbs, 10);
         
-        textDemo();
-        controlState = 1;
-      } else if (controlState == 1) {
-        if ( UART.getVescValues() ) {
-            char inpVoltage[16];
-            char rpm[16];
-            char ampHours[16];
-            char tachometerAbs[16];
+        ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  32, "ampHours:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
+        ssd1306_printFixed(90,  16, inpVoltage, STYLE_NORMAL);
+        ssd1306_printFixed(90,  24, rpm, STYLE_NORMAL);
+        ssd1306_printFixed(90,  32, ampHours, STYLE_NORMAL);
+        ssd1306_printFixed(90,  40, tachometerAbs, STYLE_NORMAL);
+      } else {
+          //Serial.println("Failed to get data");
+          ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
+      } 
+  }
 
-            itoa(UART.data.inpVoltage, inpVoltage, 10);
-            itoa(UART.data.rpm, rpm, 10);
-            itoa(UART.data.ampHours, ampHours, 10);
-            itoa(UART.data.tachometerAbs, tachometerAbs, 10);
-
-            ssd1306_printFixed(0,  8, "inpVoltage:", STYLE_NORMAL);
-            ssd1306_printFixed(0,  16, "rpm:", STYLE_NORMAL);
-            ssd1306_printFixed(0,  24, "ampHours:", STYLE_NORMAL);
-            ssd1306_printFixed(0,  32, "tachometerAbs:", STYLE_NORMAL);
-
-            ssd1306_printFixed(90,  8, inpVoltage, STYLE_NORMAL);
-            ssd1306_printFixed(90,  16, rpm, STYLE_NORMAL);
-            ssd1306_printFixed(90,  24, ampHours, STYLE_NORMAL);
-            ssd1306_printFixed(90,  32, tachometerAbs, STYLE_NORMAL);
-        } else {
-            //Serial.println("Failed to get data");
-            ssd1306_printFixed(0,  8, "Error", STYLE_NORMAL);
-        }
-
-        controlState = 2;
-
-    } else {
-       ssd1306_setFixedFont(comic_sans_font24x32_123);
-      ssd1306_printFixed(0, 16, "24", STYLE_BOLD);
-
-      controlState = 0;
-    }
-
-
-      delay(1000);
+  delay(100);
     
 }
 
