@@ -42,7 +42,6 @@ const char* const PROGMEM gradString = "GRAD C";
 const char* const PROGMEM kmString = "KM";
 const char* const PROGMEM rpmString = "RPM: ";
 
-
 // Menu State Management
 const int PROGMEM nStates = 5;
 
@@ -242,6 +241,4 @@ void loop()
     showTitle(infoTitle);
     showInfo();
   }
-
-  delay(10);
 }
