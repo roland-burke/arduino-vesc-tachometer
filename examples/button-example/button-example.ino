@@ -1,5 +1,8 @@
 #include <SPI.h>
 
+#define BUTTON_UP 0
+#define BUTTON_DOWN 1
+
 #define BUTTON_PIN 4
 
 int controlState = 0;
@@ -28,7 +31,7 @@ void loop()
 
 int buttonState = digitalRead(BUTTON_PIN);
 
-  if (lastButtonState == 0 && buttonState == 1) {
+  if (lastButtonState == BUTTON_UP && buttonState == BUTTON_DOWN) {
     changeState();
   }
 
