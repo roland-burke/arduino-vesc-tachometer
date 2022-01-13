@@ -3,6 +3,9 @@
 #include <SPI.h>
 #include <VescUart.h>
 
+#define BUTTON_UP 0
+#define BUTTON_DOWN 1
+
 // Pins
 #define BUTTON_PIN 4
 #define RESET_PIN 10
@@ -32,7 +35,6 @@ const char* const PROGMEM tripTitle = "TRIP";
 
 // Messages
 const char* const PROGMEM notAvailable = "n.A.";
-const char* const PROGMEM errorStr = "Error";
 
 // Units
 const char* const PROGMEM kmhString = "KMH";
@@ -176,42 +178,46 @@ void showTime() {
   ssd1306_printFixed(0, MAIN_Y_POS, timeString, STYLE_NORMAL);
 }
 
-void showInfo() {
+void printInfo(const char* inpVoltage, const char* rpm, const char* avgInpCurrent, const char* tachometerAbs, const char* ampHours) {
   ssd1306_setFixedFont(ssd1306xled_font6x8);
-    if ( UART.getVescValues() ) {
-        char inpVoltage[6];
-        char rpm[6];
-        char avgInpCurrent[6];
-        char tachometerAbs[6];
-        char ampHours[6];
-        itoa(UART.data.inpVoltage, inpVoltage, 10);
-        itoa(UART.data.rpm, rpm, 10);
-        itoa(UART.data.avgInputCurrent, avgInpCurrent, 10);
-        itoa(UART.data.tachometerAbs, tachometerAbs, 10);
-        itoa(UART.data.ampHours, ampHours, 10);
-        
-        ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  32, "avgInpCurr:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  48, "ampHours:", STYLE_NORMAL);
-        ssd1306_printFixed(88,  16, inpVoltage, STYLE_NORMAL);
-        ssd1306_printFixed(88,  24, rpm, STYLE_NORMAL);
-        ssd1306_printFixed(88,  32, avgInpCurrent, STYLE_NORMAL);
-        ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
-        ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
-      } else {
-        ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
-      }
+  ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
+  ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
+  ssd1306_printFixed(0,  32, "avgInpCurr:", STYLE_NORMAL);
+  ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
+  ssd1306_printFixed(0,  48, "ampHours:", STYLE_NORMAL);
+  ssd1306_printFixed(88,  16, inpVoltage, STYLE_NORMAL);
+  ssd1306_printFixed(88,  24, rpm, STYLE_NORMAL);
+  ssd1306_printFixed(88,  32, avgInpCurrent, STYLE_NORMAL);
+  ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
+  ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
+}
+
+void showInfo() {
+  if ( UART.getVescValues() ) {
+      char inpVoltage[6];
+      char rpm[6];
+      char avgInpCurrent[6];
+      char tachometerAbs[6];
+      char ampHours[6];
+      itoa(UART.data.inpVoltage, inpVoltage, 10);
+      itoa(UART.data.rpm, rpm, 10);
+      itoa(UART.data.avgInputCurrent, avgInpCurrent, 10);
+      itoa(UART.data.tachometerAbs, tachometerAbs, 10);
+      itoa(UART.data.ampHours, ampHours, 10);
+      
+      printInfo(inpVoltage, rpm, avgInpCurrent, tachometerAbs, ampHours);
+    } else {
+      printInfo(notAvailable, notAvailable, notAvailable, notAvailable, notAvailable);
+    }
 }
 
 void loop()
 {
   int buttonState = digitalRead(BUTTON_PIN);
-  
+
   // Control the button press, so that it doesn't keep switching if you keep the button pressed
   if (lastButtonState != buttonState) {
-    if (lastButtonState == 0 && buttonState == 1) {
+    if (lastButtonState == BUTTON_UP && buttonState == BUTTON_DOWN) {
       changeState();
       ssd1306_clearScreen();
     }

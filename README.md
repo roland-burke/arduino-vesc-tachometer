@@ -1,6 +1,14 @@
 # Techometer for E-Bike
 
-Basic overview of the tachometer controlled by arduino nano.
+Basic overview of the tachometer controlled by arduino nano. It shows Speed (kmh), Motor Temperature (°C), Distance driven (km), (kmh), time elapsed and Battery Percentage. It also shows some raw output from the VESC.
+
+With the button you can switch between the different information displayed.
+
+## Libraries used
+- https://github.com/lexus2k/ssd1306
+- https://github.com/SolidGeek/VescUart
+
+The ssd1306 is great, becuase it needs very little RAM.
 
 ## Hardware used
 - Arduino Nano (Atmega328p)
