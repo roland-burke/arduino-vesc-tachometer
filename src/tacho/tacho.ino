@@ -13,7 +13,7 @@
 #define MAIN_Y_POS 22
 
 // Calculations
-#define POLES 46
+#define POLES 46.0
 #define WHEEL_DIAMETER 0.72 // in meter
 #define BAT_MIN_VOLTAGE 48.0 // Empty
 #define BAT_MAX_VOLTAGE 67.2 // Full
@@ -80,6 +80,34 @@ char* getTime(char* timeString) {
   return timeString;
 }
 
+float getBatteryPercentage() {
+  return ((UART.data.inpVoltage - BAT_MIN_VOLTAGE) / (BAT_MAX_VOLTAGE - BAT_MIN_VOLTAGE)) * 100;
+}
+
+float getSpeed() {
+  int rpm = (UART.data.rpm) / (POLES / 2);
+        
+  // We do not need to pay attention to the translation because it is 1 to 1.
+  float velocity = abs(rpm) * PI * (60.0 / 1000.0) * WHEEL_DIAMETER;
+
+  if (velocity > 999) {
+    return 999.0;
+  }
+  return velocity;
+}
+
+float getTrip() {
+  float tach = (UART.data.tachometerAbs) / POLES * 3.0;
+        
+  // We do not need to pay attention to the translation because it is 1 to 1.
+  float distance = tach * PI * (1.0/1000.0) * WHEEL_DIAMETER;
+
+  if (distance > 99) {
+    return 99.0;
+  }
+  return distance;
+}
+
 void showTitle(const char* text) {
   ssd1306_setFixedFont(ssd1306xled_font8x16 );
   ssd1306_printFixed(0, 0, text, STYLE_NORMAL);
@@ -88,38 +116,25 @@ void showTitle(const char* text) {
 void showBattery() {
   ssd1306_setFixedFont(ssd1306xled_font8x16);
   if ( UART.getVescValues() ) {
-        float voltage = (UART.data.inpVoltage);
-
-        float batteryPercent = ((voltage - BAT_MIN_VOLTAGE) / (BAT_MAX_VOLTAGE - BAT_MIN_VOLTAGE)) * 100;
-
-        char PROGMEM batteryString[5];
-        dtostrf(batteryPercent, 3, 0, batteryString);
-        strcat(batteryString, "%");        
-        ssd1306_printFixed(88, 2, batteryString, STYLE_NORMAL);
-      } else {
-        ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
-      }
+      char batteryString[5];
+      dtostrf(getBatteryPercentage(), 3, 0, batteryString);
+      strcat(batteryString, "%");        
+      ssd1306_printFixed(88, 2, batteryString, STYLE_NORMAL);
+    } else {
+      ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
+    }
 }
 
 void showSpeed() {
   if ( UART.getVescValues() ) {
-        int rpm = (UART.data.rpm) / (POLES / 2);
-        
-        // We do not need to pay attention to the translation because it is 1 to 1.
-        float velocity = abs(rpm) * PI * (60.0 / 1000.0) * WHEEL_DIAMETER;
+      char speedString[4];
+      dtostrf(getSpeed(), 3, 0, speedString);
 
-        if (velocity > 999) {
-          velocity = 999;
-        } 
-
-        char PROGMEM speedString[4];
-        dtostrf(velocity, 3, 0, speedString);
-
-        ssd1306_setFixedFont(comic_sans_font24x32_123);
-        ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
-      } else {
-          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
-      }
+      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
+    } else {
+        ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+    }
   
   ssd1306_setFixedFont(ssd1306xled_font8x16);
   ssd1306_printFixed(104, 53, kmhString, STYLE_NORMAL);
@@ -127,49 +142,67 @@ void showSpeed() {
 
 void showTemperature() {
   if ( UART.getVescValues() ) {
-        float tempMotor = UART.data.tempMotor;
+      char tempMotorString[4];
+      dtostrf(UART.data.tempMotor, 3, 0, tempMotorString);
 
-        char PROGMEM tempMotorString[4];
-        dtostrf(tempMotor, 3, 0, tempMotorString);
-
-        ssd1306_setFixedFont(comic_sans_font24x32_123);
-        ssd1306_printFixed(0, MAIN_Y_POS, tempMotorString, STYLE_BOLD);
-      } else {
-          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
-      }
+      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_printFixed(0, MAIN_Y_POS, tempMotorString, STYLE_BOLD);
+    } else {
+        ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+    }
   ssd1306_setFixedFont(ssd1306xled_font8x16);
   ssd1306_printFixed(80, 53, gradString, STYLE_BOLD);
 }
 
 void showTrip() {
   if ( UART.getVescValues() ) {
-        float tach = (UART.data.tachometerAbs) / POLES * 3;
-        
-        // We do not need to pay attention to the translation because it is 1 to 1.
-        float distance = tach * PI * (1.0/1000.0) * WHEEL_DIAMETER;
+      char distanceString[5];
+      dtostrf(getTrip(), 2, 1, distanceString);
 
-        if (distance > 99) {
-          distance = 99;
-        } 
-
-        char PROGMEM distanceString[5];
-        dtostrf(distance, 2, 1, distanceString);
-
-        ssd1306_setFixedFont(comic_sans_font24x32_123);
-        ssd1306_printFixed(0, MAIN_Y_POS, distanceString, STYLE_BOLD);
-      } else {
-          ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
-      }
+      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_printFixed(0, MAIN_Y_POS, distanceString, STYLE_BOLD);
+    } else {
+        ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+    }
 
   ssd1306_setFixedFont(ssd1306xled_font8x16 );
   ssd1306_printFixed(108, 53, kmString, STYLE_NORMAL);
 }
 
 void showTime() {
-  char PROGMEM timeString[7] = "";
+  char timeString[7] = "";
   getTime(timeString);
   ssd1306_setFixedFont(comic_sans_font24x32_123 );
   ssd1306_printFixed(0, MAIN_Y_POS, timeString, STYLE_NORMAL);
+}
+
+void showInfo() {
+  ssd1306_setFixedFont(ssd1306xled_font6x8);
+    if ( UART.getVescValues() ) {
+        char inpVoltage[6];
+        char rpm[6];
+        char avgInpCurrent[6];
+        char tachometerAbs[6];
+        char ampHours[6];
+        itoa(UART.data.inpVoltage, inpVoltage, 10);
+        itoa(UART.data.rpm, rpm, 10);
+        itoa(UART.data.avgInputCurrent, avgInpCurrent, 10);
+        itoa(UART.data.tachometerAbs, tachometerAbs, 10);
+        itoa(UART.data.ampHours, ampHours, 10);
+        
+        ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  32, "avgInpCurr:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
+        ssd1306_printFixed(0,  48, "ampHours:", STYLE_NORMAL);
+        ssd1306_printFixed(88,  16, inpVoltage, STYLE_NORMAL);
+        ssd1306_printFixed(88,  24, rpm, STYLE_NORMAL);
+        ssd1306_printFixed(88,  32, avgInpCurrent, STYLE_NORMAL);
+        ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
+        ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
+      } else {
+        ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
+      }
 }
 
 void loop()
@@ -201,35 +234,8 @@ void loop()
     showTrip();
   } else {
     showTitle(infoTitle);
-    ssd1306_setFixedFont(ssd1306xled_font6x8);
-    if ( UART.getVescValues() ) {
-        char PROGMEM inpVoltage[6];
-        char PROGMEM rpm[6];
-        char PROGMEM avgInpCurrent[6];
-        char PROGMEM tachometerAbs[6];
-        char PROGMEM ampHours[6];
-        itoa(UART.data.inpVoltage, inpVoltage, 10);
-        itoa(UART.data.rpm, rpm, 10);
-        itoa(UART.data.avgInputCurrent, avgInpCurrent, 10);
-        itoa(UART.data.tachometerAbs, tachometerAbs, 10);
-        itoa(UART.data.ampHours, ampHours, 10);
-        
-        ssd1306_printFixed(0,  16, "inpVolt:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  24, "rpm:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  32, "avgInpCurr:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  40, "tachoAbs:", STYLE_NORMAL);
-        ssd1306_printFixed(0,  48, "ampHours:", STYLE_NORMAL);
-        ssd1306_printFixed(88,  16, inpVoltage, STYLE_NORMAL);
-        ssd1306_printFixed(88,  24, rpm, STYLE_NORMAL);
-        ssd1306_printFixed(88,  32, avgInpCurrent, STYLE_NORMAL);
-        ssd1306_printFixed(88,  40, tachometerAbs, STYLE_NORMAL);
-        ssd1306_printFixed(88,  48, ampHours, STYLE_NORMAL);
-      } else {
-          ssd1306_printFixed(0,  30, errorStr, STYLE_NORMAL);
-      } 
+    showInfo();
   }
 
   delay(10);
-    
 }
-
