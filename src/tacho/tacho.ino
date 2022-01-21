@@ -14,6 +14,7 @@
 
 // Ui
 #define MAIN_Y_POS 22
+#define DISPLAY_REFRESH_RATE 5 // 5ms
 
 // Calculations
 #define POLES 46.0
@@ -40,7 +41,6 @@ const char* const PROGMEM notAvailable = "n.A.";
 const char* const PROGMEM kmhString = "KMH";
 const char* const PROGMEM gradString = "GRAD C";
 const char* const PROGMEM kmString = "KM";
-const char* const PROGMEM rpmString = "RPM: ";
 
 // Menu State Management
 const int PROGMEM nStates = 5;
@@ -49,17 +49,31 @@ int controlState = 0;
 int buttonState = 0;
 int lastButtonState = 0;
 
+// Refresh Rate Management
+const int PROGMEM updateDelay = 700; //ms
+int delayCount = updateDelay + 1;
+
 void setup()
 {
     ssd1306_128x64_spi_init(RESET_PIN, CES_PIN, DC_PIN);
-
     ssd1306_clearScreen();
+
+    initialize();
 
     Serial.begin(115200);
     UART.setSerialPort(&Serial);
 
     // setup button
     pinMode(BUTTON_PIN, INPUT);
+}
+
+void initialize() {
+  showTitle("INITIALIZING");
+
+  //ssd1306_drawBitmap(0, 0, LOGO_WIDTH, LOGO_HEIGHT, logo);
+
+  delay(3000);
+  ssd1306_clearScreen();
 }
 
 void changeState() {
@@ -91,14 +105,14 @@ float getSpeed() {
   // We do not need to pay attention to the translation because it is 1 to 1.
   float velocity = abs(rpm) * PI * (60.0 / 1000.0) * WHEEL_DIAMETER;
 
-  if (velocity > 999) {
-    return 999.0;
+  if (velocity > 99) {
+    return 99.0;
   }
   return velocity;
 }
 
 float getTrip() {
-  float tach = (UART.data.tachometerAbs) / POLES * 3.0;
+  float tach = (UART.data.tachometerAbs) / (POLES * 3.0);
         
   // We do not need to pay attention to the translation because it is 1 to 1.
   float distance = tach * PI * (1.0/1000.0) * WHEEL_DIAMETER;
@@ -193,6 +207,7 @@ void printInfo(const char* inpVoltage, const char* rpm, const char* avgInpCurren
 
 void showInfo() {
   if ( UART.getVescValues() ) {
+      printInfo("     ", "     ", "     ", "     ", "     ");
       char inpVoltage[6];
       char rpm[6];
       char avgInpCurrent[6];
@@ -219,26 +234,36 @@ void loop()
     if (lastButtonState == BUTTON_UP && buttonState == BUTTON_DOWN) {
       changeState();
       ssd1306_clearScreen();
+      delayCount = updateDelay + 1; // make it bigger to trigger an update
     }
     lastButtonState = buttonState;
   }
 
-  showBattery();
-
-  if(controlState == 0) {
-    showTitle(speedTitle);
-    showSpeed();
-  } else if(controlState == 1) {
-    showTitle(tempTitle);
-    showTemperature();
-  } else if (controlState == 2) {
-    showTitle(timeTitle);
-    showTime();
-  } else if (controlState == 3) {
-    showTitle(tripTitle);
-    showTrip();
-  } else {
-    showTitle(infoTitle);
-    showInfo();
+  // Skip display update if delay is not reached
+  if (delayCount > updateDelay) {
+    showBattery();
+    if(controlState == 0) {
+      showTitle(speedTitle);
+      showSpeed();
+    } else if(controlState == 1) {
+      showTitle(tempTitle);
+      showTemperature();
+    } else if (controlState == 3) {
+      showTitle(tripTitle);
+      showTrip();
+    } else if (controlState == 4) {
+      showTitle(infoTitle);
+      showInfo();
+    }
+    delayCount = 0;
   }
+
+  // exclude time from the if branching, because it updates itself just every second
+  if (controlState == 2) {
+      showTitle(timeTitle);
+      showTime();
+  }
+  
+  delay(DISPLAY_REFRESH_RATE); // 0.005s
+  delayCount = delayCount + DISPLAY_REFRESH_RATE;
 }
