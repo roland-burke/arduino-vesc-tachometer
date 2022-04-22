@@ -1,7 +1,11 @@
 #include <ssd1306.h>
-#include <ssd1306_fonts.h>
 #include <SPI.h>
 #include <VescUart.h>
+#include "chakra14pt.h" // Unit
+#include "chakra50pt.h" // main
+#include "chakra10pt.h" // title
+#include "chakra35pt.h" // main decimal
+#include "chakra32pt.h" // time
 
 #define BUTTON_UP 0
 #define BUTTON_DOWN 1
@@ -13,7 +17,7 @@
 #define DC_PIN 9
 
 // Ui
-#define MAIN_Y_POS 22
+#define MAIN_Y_POS 23
 #define DISPLAY_REFRESH_RATE 5 // 5ms
 
 // Calculations
@@ -35,11 +39,11 @@ const char* const PROGMEM timeTitle = "TIME";
 const char* const PROGMEM tripTitle = "TRIP";
 
 // Messages
-const char* const PROGMEM notAvailable = "n.A.";
+const char* const PROGMEM notAvailable = "N.A.";
 
 // Units
 const char* const PROGMEM kmhString = "KMH";
-const char* const PROGMEM gradString = "GRAD C";
+const char* const PROGMEM gradString = "°C";
 const char* const PROGMEM kmString = "KM";
 
 // Menu State Management
@@ -68,7 +72,8 @@ void setup()
 }
 
 void initialize() {
-  showTitle("INITIALIZING");
+  ssd1306_setFixedFont(ChakraPetch_SemiBold11x14 );
+  showTitle("STARTING");
 
   //ssd1306_drawBitmap(0, 0, LOGO_WIDTH, LOGO_HEIGHT, logo);
 
@@ -88,7 +93,6 @@ char* getTime(char* timeString) {
   unsigned long myTime = millis();
   unsigned long seconds = myTime / 1000;
   int minutes = seconds / 60;
-  //int hours = minutes / 60;
 
   sprintf(timeString, timeFormat, minutes % 60, seconds % 60);
 
@@ -124,71 +128,71 @@ float getTrip() {
 }
 
 void showTitle(const char* text) {
-  ssd1306_setFixedFont(ssd1306xled_font8x16 );
+  ssd1306_setFixedFont(ChakraPetch_SemiBold11x14 );
   ssd1306_printFixed(0, 0, text, STYLE_NORMAL);
 }
 
 void showBattery() {
-  ssd1306_setFixedFont(ssd1306xled_font8x16);
+  ssd1306_setFixedFont(ChakraPetch_SemiBold11x14);
   if ( UART.getVescValues() ) {
       char batteryString[5];
       dtostrf(getBatteryPercentage(), 3, 0, batteryString);
       strcat(batteryString, "%");        
-      ssd1306_printFixed(88, 2, batteryString, STYLE_NORMAL);
+      ssd1306_printFixed(80, 2, batteryString, STYLE_NORMAL);
     } else {
-      ssd1306_printFixed(95,  0, notAvailable, STYLE_NORMAL);
+      ssd1306_printFixed(80,  0, notAvailable, STYLE_NORMAL);
     }
 }
 
 void showSpeed() {
   if ( UART.getVescValues() ) {
       char speedString[4];
-      dtostrf(getSpeed(), 3, 0, speedString);
+      dtostrf(getSpeed(), 2, 0, speedString);
 
-      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_setFixedFont(ChakraPetch_Bold41x46);
       ssd1306_printFixed(0, MAIN_Y_POS, speedString, STYLE_BOLD);
     } else {
         ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
     }
   
-  ssd1306_setFixedFont(ssd1306xled_font8x16);
-  ssd1306_printFixed(104, 53, kmhString, STYLE_NORMAL);
+  ssd1306_setFixedFont(ChakraPetch_SemiBold16x19);
+  ssd1306_printFixed(80, 49, kmhString, STYLE_NORMAL);
 }
 
 void showTemperature() {
   if ( UART.getVescValues() ) {
       char tempMotorString[4];
-      dtostrf(UART.data.tempMotor, 3, 0, tempMotorString);
+      dtostrf(UART.data.tempMotor, 2, 0, tempMotorString);
 
-      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_setFixedFont(ChakraPetch_Bold41x46);
       ssd1306_printFixed(0, MAIN_Y_POS, tempMotorString, STYLE_BOLD);
     } else {
         ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
     }
-  ssd1306_setFixedFont(ssd1306xled_font8x16);
-  ssd1306_printFixed(80, 53, gradString, STYLE_BOLD);
+  ssd1306_setFixedFont(ChakraPetch_SemiBold16x19);
+  ssd1306_printFixed(80, 49, gradString, STYLE_BOLD);
 }
 
 void showTrip() {
   if ( UART.getVescValues() ) {
       char distanceString[5];
-      dtostrf(getTrip(), 2, 1, distanceString);
+      dtostrf(getTrip(), 4, 1, distanceString);
 
-      ssd1306_setFixedFont(comic_sans_font24x32_123);
+      ssd1306_setFixedFont(ChakraPetch_Bold28x32);
       ssd1306_printFixed(0, MAIN_Y_POS, distanceString, STYLE_BOLD);
     } else {
-        ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
+      ssd1306_printFixed(0,  MAIN_Y_POS, notAvailable, STYLE_NORMAL);
     }
 
-  ssd1306_setFixedFont(ssd1306xled_font8x16 );
-  ssd1306_printFixed(108, 53, kmString, STYLE_NORMAL);
+  ssd1306_setFixedFont(ChakraPetch_SemiBold16x19);
+  ssd1306_printFixed(80, 49, kmString, STYLE_NORMAL);
 }
 
 void showTime() {
   char timeString[7] = "";
   getTime(timeString);
-  ssd1306_setFixedFont(comic_sans_font24x32_123 );
-  ssd1306_printFixed(0, MAIN_Y_POS, timeString, STYLE_NORMAL);
+  ssd1306_setFixedFont(ChakraPetch_Bold25x30);
+  ssd1306_printFixed(0, MAIN_Y_POS + 5, timeString, STYLE_NORMAL);
 }
 
 void printInfo(const char* inpVoltage, const char* rpm, const char* avgInpCurrent, const char* tachometerAbs, const char* ampHours) {
