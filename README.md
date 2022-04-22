@@ -5,8 +5,8 @@ Basic overview of the tachometer controlled by arduino nano. It shows Speed (kmh
 With the button you can switch between the different information displayed.
 
 ## Libraries used
-- https://github.com/lexus2k/ssd1306
-- https://github.com/SolidGeek/VescUart
+- https://github.com/lexus2k/ssd1306 (MIT License)
+- https://github.com/SolidGeek/VescUart (GNU v3.0 License)
 
 The ssd1306 is great, becuase it needs very little RAM.
 
